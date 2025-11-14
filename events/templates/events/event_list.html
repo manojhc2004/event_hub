@@ -11,13 +11,13 @@
     </h1>
 
     <!-- Search Bar -->
-    <div class="flex justify-center mb-10">
-        <form method="get" action="{% url 'event_list' %}" 
+    <div class="flex justify-center mb-6">
+        <form method="get" action="{% url 'event_list' %}"
               class="flex w-full max-w-xl bg-white dark:bg-gray-800 shadow-md rounded-xl overflow-hidden">
 
             <input type="text"
                    name="q"
-                   placeholder="Search events by title, venue, or description..."
+                   placeholder="Search events..."
                    value="{{ request.GET.q|default:'' }}"
                    class="flex-1 px-5 py-3 bg-transparent focus:outline-none
                           text-gray-700 dark:text-gray-100">
@@ -28,7 +28,48 @@
         </form>
     </div>
 
-    <!-- Events List -->
+    <!-- CATEGORY FILTER BAR -->
+    <div class="flex justify-center gap-3 mb-8 flex-wrap">
+
+        {% for key,label in category_list %}
+            <a href="?category={{ key }}&q={{ request.GET.q }}&price={{ selected_price }}"
+               class="px-4 py-2 rounded-xl border transition
+                      {% if selected_category == key %}
+                        bg-primary text-white border-primary
+                      {% else %}
+                        border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300
+                      {% endif %}
+                      hover:bg-primary hover:text-white">
+                {{ label }}
+            </a>
+        {% endfor %}
+
+    </div>
+
+    <!-- PRICE FILTER -->
+    <div class="flex justify-center mb-10">
+        <form method="get" class="flex items-center gap-3">
+
+            <input type="hidden" name="category" value="{{ selected_category }}">
+            <input type="hidden" name="q" value="{{ request.GET.q }}">
+
+            <input type="number"
+                   name="price"
+                   min="0"
+                   value="{{ selected_price }}"
+                   placeholder="Max Price"
+                   class="px-4 py-2 rounded-xl border 
+                          bg-white dark:bg-gray-800 
+                          border-gray-300 dark:border-gray-700">
+
+            <button class="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary/90">
+                Apply
+            </button>
+        </form>
+    </div>
+
+
+    <!-- EVENTS LIST -->
     <div class="space-y-8 max-w-5xl mx-auto">
 
         {% for event in events %}
@@ -37,8 +78,7 @@
             <!-- Event Image -->
             <div class="md:w-1/3 h-52 md:h-auto">
                 {% if event.image %}
-                    <img src="{{ event.image.url }}"
-                         class="w-full h-full object-cover" />
+                    <img src="{{ event.image.url }}" class="w-full h-full object-cover" />
                 {% else %}
                     <div class="w-full h-full flex items-center justify-center 
                                 bg-gray-200 dark:bg-gray-700 text-gray-500">
@@ -54,18 +94,25 @@
                     {{ event.title }}
                 </h2>
 
+                <p class="text-sm text-gray-600 dark:text-gray-300">
+                    Category: <span class="font-semibold">{{ event.category|title }}</span>
+                </p>
+
                 <p class="flex items-center gap-2 text-gray-600 dark:text-gray-300 text-sm">
                     <i class="bi bi-calendar-event text-primary"></i>
                     {{ event.date|date:"F d, Y" }} — {{ event.time|time:"h:i A" }}
                 </p>
 
                 <p class="flex items-center gap-2 text-gray-600 dark:text-gray-300 text-sm">
-                    <i class="bi bi-geo-alt text-primary"></i>
-                    {{ event.venue }}
+                    <i class="bi bi-geo-alt text-primary"></i> {{ event.venue }}
                 </p>
 
                 <p class="text-gray-700 dark:text-gray-300">
                     {{ event.description|truncatechars:110 }}
+                </p>
+
+                <p class="text-sm font-medium">
+                    Price: ₹{{ event.price }}
                 </p>
 
                 <p class="text-sm font-medium">
@@ -83,7 +130,7 @@
                 <div class="pt-3">
                     <a href="{% url 'event_detail' event.pk %}"
                        class="inline-block px-6 py-2 rounded-xl border border-primary text-primary 
-                              hover:bg-primary hover:text-white transition font-medium
+                              hover:bg-primary hover:text-white transition font-medium 
                               {% if event.is_fully_booked %} opacity-50 cursor-not-allowed {% endif %}">
                         View & Book
                     </a>
@@ -94,12 +141,9 @@
         </div>
         {% empty %}
 
-        <!-- Empty State -->
+        <!-- No Events -->
         <div class="text-center text-gray-600 dark:text-gray-300 py-16">
             <p class="text-lg">No events found.</p>
-            {% if request.GET.q %}
-            <p class="text-sm">Try a different search term.</p>
-            {% endif %}
         </div>
 
         {% endfor %}

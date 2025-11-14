@@ -12,6 +12,7 @@ from datetime import date
 from .models import Event, Booking, UserProfile 
 # FIX IS HERE: Importing the correct, renamed forms.
 from .forms import UserUpdateForm, ProfileUpdateForm 
+from reportlab.pdfgen import canvas
 
 # ----------------------------------------------------
 # 1. AUTHENTICATION (Registration)
@@ -22,9 +23,10 @@ from django.contrib import messages
 from .forms import CustomRegisterForm
 from datetime import datetime, time
 from django.utils import timezone
-  
 from datetime import date, datetime
 from django.utils import timezone
+from datetime import date, timedelta
+
 
 
 
@@ -50,26 +52,57 @@ class UserRegistrationView(View):
 # ----------------------------------------------------
 # 2. EVENT LISTING (Landing Page) - Includes Search Logic
 # ----------------------------------------------------
-
 class EventListView(ListView):
-    """Displays a list of all upcoming events, with search functionality."""
     model = Event
-    template_name = 'events/event_list.html'
-    context_object_name = 'events'
-    ordering = ['date', 'time']
+    template_name = "events/event_list.html"
+    context_object_name = "events"
 
     def get_queryset(self):
-        queryset = Event.objects.filter(date__gte=date.today())
-        query = self.request.GET.get('q')
-        
-        if query:
-            # Filter the queryset using Q objects for OR logic across fields
+        queryset = Event.objects.all()
+
+        # 1️⃣ Search filter
+        q = self.request.GET.get("q")
+        if q:
             queryset = queryset.filter(
-                Q(title__icontains=query) |
-                Q(description__icontains=query) |
-                Q(venue__icontains=query)
-            ).distinct()
-        return queryset.order_by('date', 'time')
+                Q(title__icontains=q)
+                | Q(description__icontains=q)
+                | Q(venue__icontains=q)
+            )
+
+        # 2️⃣ Category filter
+        selected_category = self.request.GET.get("category", "all")
+        if selected_category and selected_category != "all":
+            queryset = queryset.filter(category=selected_category)
+
+        # 3️⃣ Price filter
+        selected_price = self.request.GET.get("price")
+        if selected_price:
+            try:
+                queryset = queryset.filter(price__lte=int(selected_price))
+            except ValueError:
+                pass
+
+        return queryset.order_by("date", "time")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Send selected filters back to template
+        context["selected_category"] = self.request.GET.get("category", "all")
+        context["selected_price"] = self.request.GET.get("price", "")
+
+        #  Category List (for filter bar)
+        context["category_list"] = [
+            ("all", "All"),
+            ("music", "Music"),
+            ("conference", "Conference"),
+            ("sports", "Sports"),
+            ("workshop", "Workshop"),
+        ]
+
+        return context
+
+
 
 
 # ----------------------------------------------------
@@ -128,7 +161,7 @@ def booking_confirmation(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
 
     # FULL CHECK
-    if event.is_fully_booked:
+    if event.is_fully_booked():
         messages.error(request, "This event is fully booked.")
         return redirect("event_detail", pk=event_id)
 
@@ -143,7 +176,6 @@ def booking_confirmation(request, event_id):
         event=event
     )
 
-    # SHOW CONFIRMATION PAGE
     return render(request, "events/booking_confirmation.html", {
         "event": event,
         "booking": booking,
@@ -173,17 +205,11 @@ class MyBookingsView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        now = timezone.now()
-
-        for booking in context['bookings']:
-            event = booking.event
-
+        for booking in context["bookings"]:
             event_datetime = timezone.make_aware(
-                datetime.combine(event.date, event.time)
+                datetime.combine(booking.event.date, booking.event.time)
             )
-
-            # Set can_cancel True / False
-            booking.can_cancel = now < event_datetime
+            booking.can_cancel = timezone.now() < event_datetime
 
         return context
 
@@ -298,3 +324,40 @@ def cancel_booking(request, booking_id):
 
     messages.success(request, f"Your booking for '{event.title}' has been cancelled.")
     return redirect("my_bookings")
+
+
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from django.http import HttpResponse
+
+@login_required
+def download_ticket(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+
+    # PDF response
+    response = HttpResponse(content_type="application/pdf")
+    response['Content-Disposition'] = f'attachment; filename="ticket_{booking.ticket_id}.pdf"'
+
+    # Create PDF
+    p = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
+
+    p.setFont("Helvetica-Bold", 20)
+    p.drawString(50, height - 50, "🎟 Event Ticket")
+
+    p.setFont("Helvetica", 14)
+    p.drawString(50, height - 100, f"Event: {booking.event.title}")
+    p.drawString(50, height - 130, f"Date: {booking.event.date}")
+    p.drawString(50, height - 160, f"Time: {booking.event.time}")
+    p.drawString(50, height - 190, f"Venue: {booking.event.venue}")
+
+    p.drawString(50, height - 230, f"Ticket ID: {booking.ticket_id}")
+    p.drawString(50, height - 260, f"Seats Booked: {booking.number_of_seats}")
+
+    p.drawString(50, height - 310, "Thank you for booking with EventHub! ❤️")
+
+    p.showPage()
+    p.save()
+    return response
+

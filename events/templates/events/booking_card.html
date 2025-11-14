@@ -18,26 +18,30 @@
         </p>
     </div>
 
-    <!-- RIGHT: CANCEL BUTTON -->
-    <div class="text-right">
+    <!-- RIGHT BUTTONS -->
+    <div class="text-right space-y-2">
+
+        <!-- DOWNLOAD TICKET BUTTON -->
+        <a href="{% url 'download_ticket' booking.id %}"
+           class="block px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold 
+                  hover:bg-blue-700 transition text-center">
+            <i class="bi bi-ticket-perforated"></i> Download Ticket
+        </a>
 
         {% if booking.can_cancel %}
             <!-- CANCEL BUTTON -->
             <form method="post" action="{% url 'cancel_booking' booking.id %}">
                 {% csrf_token %}
                 <button
-                    class="px-4 py-2 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition">
-                    Cancel
+                    class="w-full px-4 py-2 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition">
+                    Cancel Booking
                 </button>
             </form>
-
         {% else %}
-            <!-- DISABLED STATUS -->
-            <span class="px-4 py-2 bg-gray-400 text-white rounded-xl">
+            <span class="block px-4 py-2 bg-gray-400 text-white rounded-xl text-center">
                 Cancellation Closed
             </span>
         {% endif %}
-
     </div>
 
 </div>

@@ -3,89 +3,15 @@
 
 {% block content %}
 
-<div class="max-w-5xl mx-auto py-10 space-y-10">
+<h1 class="text-3xl font-bold text-primary mb-8 text-center">My Bookings</h1>
 
-    <h1 class="text-3xl font-bold text-primary text-center mb-10">My Bookings</h1>
+<div class="space-y-6 max-w-4xl mx-auto">
 
-    {% if bookings %}
-        <div class="space-y-8">
-
-            {% for booking in bookings %}
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-
-                    <!-- Event Image -->
-                    {% if booking.event.image %}
-                    <img src="{{ booking.event.image.url }}" class="w-full h-64 object-cover">
-                    {% else %}
-                    <div class="w-full h-64 bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
-                        <span class="text-gray-500">No Image</span>
-                    </div>
-                    {% endif %}
-
-                    <div class="p-6 space-y-3">
-
-                        <!-- Event Title -->
-                        <h2 class="text-xl font-semibold text-primary">
-                            {{ booking.event.title }}
-                        </h2>
-
-                        <!-- Date & Time -->
-                        <p class="text-gray-600 dark:text-gray-300 text-sm">
-                            <i class="bi bi-calendar-event"></i>
-                            {{ booking.event.date|date:"F d, Y" }} at {{ booking.event.time|time:"h:i A" }}
-                        </p>
-
-                        <!-- Venue -->
-                        <p class="text-gray-600 dark:text-gray-300 text-sm">
-                            <i class="bi bi-geo-alt"></i>
-                            {{ booking.event.venue }}
-                        </p>
-
-                        <!-- Booked On -->
-                        <p class="text-gray-400 dark:text-gray-400 text-xs">
-                            Booked on: {{ booking.booking_date|date:"F d, Y h:i A" }}
-                        </p>
-
-                        <div class="flex items-center justify-between pt-4">
-
-                            <!-- View Event Button -->
-                            <a href="{% url 'event_detail' booking.event.id %}"
-                               class="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition">
-                                View Event
-                            </a>
-
-                            <!-- Cancel Button (Only for upcoming events) -->
-                            {% if booking.can_cancel %}
-                                <form action="{% url 'cancel_booking' booking.id %}" method="POST">
-                                    {% csrf_token %}
-                                    <button class="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition">
-                                        Cancel Booking
-                                    </button>
-                                </form>
-                            {% else %}
-                                <span class="px-4 py-2 bg-gray-400 text-white rounded-xl">
-                                    Cannot Cancel
-                                </span>
-                            {% endif %}
-
-                        </div>
-                    </div>
-
-                </div>
-            {% endfor %}
-
-        </div>
-
-    {% else %}
-        <!-- No Bookings -->
-        <div class="bg-white dark:bg-gray-800 p-10 rounded-xl shadow text-center">
-            <p class="text-gray-500">You have no bookings yet.</p>
-            <a href="{% url 'event_list' %}"
-               class="mt-4 inline-block px-5 py-3 bg-primary text-white rounded-xl">
-                Browse Events →
-            </a>
-        </div>
-    {% endif %}
+    {% for booking in bookings %}
+        {% include "events/booking_card.html" %}
+    {% empty %}
+        <p class="text-center text-gray-500">No bookings found.</p>
+    {% endfor %}
 
 </div>
 

@@ -1,18 +1,26 @@
 from django.contrib import admin
-
-# Register your models here.
-from django.contrib import admin
 from .models import Event, Booking
+from django.contrib import admin
+from .models import Event, Booking, UserProfile
+
+from django.contrib import admin
+from .models import Event, Booking, UserProfile
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('title', 'date', 'venue', 'max_seats', 'available_seats', 'is_fully_booked', 'created_at')
-    list_filter = ('date', 'venue')
-    search_fields = ('title', 'venue')
-    ordering = ('date',)
+    list_display = ('title', 'category', 'price', 'date', 'venue', 'max_seats')
+    list_filter = ('category', 'date')
+    search_fields = ('title', 'venue', 'description')
+
+
+
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ('user', 'event', 'booking_date')
-    list_filter = ('booking_date', 'event')
-    search_fields = ('user__username', 'event__title')
+    list_display = ("user", "event", "booking_date")
+    list_filter = ("event", "booking_date")
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "mobile")
